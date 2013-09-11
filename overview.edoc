@@ -1,0 +1,155 @@
+@title bootstrap - A simple, yet powerful Erlang cluster bootstrapping application.
+
+@doc
+
+== bootstrap ==
+
+The <code>bootstrap</code> application is a simple, yet poweful application to bootstrap an
+Erlang cluster without having to know the exact nodenames or hostnames in
+advance. It automates the process of dynamically populating the cluster with new
+nodes.
+
+<li> <a href="http://github.com/schlagert/bootstrap">Code</a></li>
+<li> <a href="http://schlagert.github.com/bootstrap">EDoc</a></li>
+<li> <a href="https://travis-ci.org/schlagert/bootstrap.png?branch=master">![Build Status</a>](https://travis-ci.org/schlagert/bootstrap)</li>
+
+=== Features ===
+
+<li> Automatically discover and connect to nodes in an Erlang cluster.</li>
+<li> Utilize UDP broadcast or multicast for node discovery.</li>
+<li> Suppport multiple nodes per host.</li>
+<li> Support creation of complex topologies using <code>hidden</code> connections.</li>
+<li> Provide node connection/disconnection notification system.</li>
+
+=== How it works ===
+
+TODO
+
+=== Configuration ===
+
+The <code>bootstrap</code> application already comes with sensible defaults (except for the
+regex used to decide whether to connect to a certain node or not). However,
+many things can be customized if desired. For this purpose the following
+configuration options are available and can be configured in the application
+environment:
+
+<li> <code>{connect_regex, Regex &#183; string()}</code></li>
+
+  Specifies a regular expression to be compiled using <code>re:compile/1</code>. A
+  bootstrap instance will only connect to a node if its name matches this
+  expression. Furthermore, transitive connections implicitly made by <code>global</code>
+  (in visible mode) will only be reported if they match this expression. Default
+  is <code>".*"</code>.
+
+<li> <code>{connect_mode, visible | hidden}</code></li>
+
+  Specifies the type of connections that will be established by this protocol
+  instance. Visible connections will most probably pull in transitive
+  connections to other nodes. If a specialized, custom topology is desired this
+  value should be set to <code>hidden</code>. However, __global name registration is
+  disfunctional__ over <code>hidden</code> connections. Default is <code>visible</code>.
+
+<li> <code>{min_connections, non_neg_integer() | infinity}</code></li>
+
+  Specifies the minimum number of __matching__ connections. A node will actively
+  try to get connections to matching nodes up to this number. Further
+  connections may be established, but the active part of the discovery will be
+  stopped when reaching this number. Active discovery will start again when the
+  number of connections drops beneath this value. Default is <code>infinity</code>.
+
+<li> <code>{primary_port, inet:port_number()}</code></li>
+
+  Specifies the main network port broadcast or multicast packets will be sent
+  over. This value must be equal for all <code>bootstrap</code> instances on all nodes.
+  Default is <code>50337</code>.
+
+<li> <code>{secondary_ports, [inet:port_number()]}</code></li>
+
+  Specified additional listen ports. This feature is necessary if the system
+  involves more than one node per host, since there's no common way to listen
+  on the same network port from multiple processes. For each additional node per
+  host another network port is required. E.g. if a system has a host with three
+  nodes this list must contain two entries (different to the <code>primary_port</code>
+  value). Default is <code>[50338, 50339]</code>.
+
+<li> <code>{protocol, broadcast | multicast}</code></li>
+
+  Specifies the network protocol used for node discovery. Default is
+  <code>broadcast</code>.
+
+<li> <code>{ping_timeout, non_neg_integer()}</code></li>
+
+  Specifies the rough time in milliseconds between two consecutive, active node
+  discovery messages. Default is <code>10000</code>.
+
+<li> <code>{multicast_ip, MulticastAddr &#183; inet:ip4_address()}</code></li>
+
+  Specifies the multicast address to be used for node discovery when using
+  the <code>multicast</code> protocol. Default is <code>{239, 192, 0, 1}</code>.
+
+<li> <code>{multicast_ttl, non_neg_integer()}</code></li>
+
+  Specifies the time-to-live (TTL) of outgoing multicast packets. When setting
+  the TTL to <code>1</code> all multicast packets are limited to the local network. Default
+  is <code>1</code>.
+
+The default configuration can be used to form an unbounded, mesh-connected
+Erlang cluster utilizing the UDP broadcast protocol.
+
+=== Notifications ===
+
+If the you use <code>bootstrap</code> to automatically establish connections between nodes,
+configuring and starting the application on all nodes is basically all you need.
+However, some use cases may make it necessary to get notified whenever a
+__matching__ connection is established or lost.
+
+For this purpose the <code>bootstrap</code> application provides the <code>bootstrap</code> behaviour.
+To get notifications about node actions the two functions <code>on_connected/2</code> and
+<code>on_disconnected/3</code> must be implemented. The implementing handler can the be
+managed using the functions provided in the <code>bootstrap</code> module. If you already
+know the <code>gen_event</code> behaviour, this will be nothing new for you. All functions
+except for <code>add_sup_handler/2</code> basically do the same as the <code>gen_event</code>
+equivalents. The only difference between <code>add_handler/2</code> and <code>add_sup_handler/2</code>
+is that the added handler will automatically be removed when the calling process
+exits. No messages will be sent to the calling process.
+
+<code>bootstrap</code> handlers will get initial notifications for all __matching__ nodes
+that are currently connected.
+
+For more information, please refer to the <code>edoc</code> of the <code>bootstrap</code> module.
+
+=== Examples ===
+
+=== Mesh Topology ===
+
+<code>visible</code> connections
+
+TODO
+
+=== Star Topology ===
+
+<code>visible</code> or <code>hidden</code> connections
+
+TODO
+
+=== Tree Topology ===
+
+<code>hidden</code> connections
+
+TODO
+
+=== History ===
+
+=== Version 0.0.1 ===
+
+<li> Regular expression based node matching</li>
+<li> UDP broadcast support</li>
+<li> UDP multicast support</li>
+<li> Multi-node-per-host support</li>
+<li> Avoid duplicate broadcasts to minimize network usage</li>
+<li> Behaviour-based notification system</li>
+<script>
+// Jump directly to a referenced url given in trailing '[]:...'-notation
+function goto(tag) { parent.document.location.href = url(tag); }
+function url(tag) { var o=document.getElementById(tag); return o ? o.href : '#'+tag; }
+</script>

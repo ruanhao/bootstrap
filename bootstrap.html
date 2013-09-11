@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module bootstrap</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module bootstrap</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+   Main module of the <code>bootstrap</code> application.
+
+<p><b>Behaviours:</b> <a href="application.html"><tt>application</tt></a>, <a href="supervisor.html"><tt>supervisor</tt></a>.</p>
+<p><b>This module defines the <tt>bootstrap</tt> behaviour.</b><br> Required callback functions: <tt>on_connected/2</tt>, <tt>on_disconnected/3</tt>.</p>
+
+<h2><a name="description">Description</a></h2><p>
+   Main module of the <code>bootstrap</code> application.</p>
+  
+   <p>This module contains the API for bootstrap handler registration as well as
+   the <code>bootstrap</code> behaviour definition that must be implemented by handlers.</p>
+  
+   Furthermore this module implements the application callback as well as the
+   top level supervisor of the <code>bootstrap</code> application.
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-arg">arg()</a></h3>
+<p><tt>arg() = term()</tt></p>
+
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#add_handler-2">add_handler/2</a></td><td>
+  Adds a new bootstrap handler module.</td></tr>
+<tr><td valign="top"><a href="#add_sup_handler-2">add_sup_handler/2</a></td><td>
+  This function works much like <a href="#add_handler-2"><code>add_handler/2</code></a> but additionally the
+  calling process will be associated with the bootstrap handler.</td></tr>
+<tr><td valign="top"><a href="#delete_handler-1">delete_handler/1</a></td><td>
+  Deletes a bootstrap handler module.</td></tr>
+<tr><td valign="top"><a href="#handlers-0">handlers/0</a></td><td>
+  Return a list of all registered bootstrap handlers.</td></tr>
+<tr><td valign="top"><a href="#info-0">info/0</a></td><td>
+  Print information about the bootstrap instances on all connected nodes.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="add_handler-2">add_handler/2</a></h3>
+<div class="spec">
+<p><tt>add_handler(Module::module(), Arg::<a href="#type-arg">arg()</a>) -&gt; ok | {error, term()}</tt><br></p>
+</div><p>
+  Adds a new bootstrap handler module. The second argument is the initial
+  handler state passed into the behaviour callbacks. A specific module can only
+  be added once per time. If the same module was already added before it must
+  be deleted in advance. There's no limit on the number of different added
+  handler modules. Callback processing is sequential and in order of addition.
+  To remove a bootstrap handler <a href="#delete_handler-1"><code>delete_handler/1</code></a> must be called.</p>
+
+<h3 class="function"><a name="add_sup_handler-2">add_sup_handler/2</a></h3>
+<div class="spec">
+<p><tt>add_sup_handler(Module::module(), Arg::<a href="#type-arg">arg()</a>) -&gt; ok | {error, term()}</tt><br></p>
+</div><p>
+  This function works much like <a href="#add_handler-2"><code>add_handler/2</code></a> but additionally the
+  calling process will be associated with the bootstrap handler. This means
+  that the calling process will be monitored and the corresponding handler
+  will be removed as soon as the associated process exits. Alternatively the
+  handler can be removed manually using <a href="#delete_handler-1"><code>delete_handler/1</code></a>.</p>
+
+<h3 class="function"><a name="delete_handler-1">delete_handler/1</a></h3>
+<div class="spec">
+<p><tt>delete_handler(Module::module()) -&gt; ok</tt><br></p>
+</div><p>
+  Deletes a bootstrap handler module. Calling this function with a module that
+  was not added before is not considered an error.</p>
+
+<h3 class="function"><a name="handlers-0">handlers/0</a></h3>
+<div class="spec">
+<p><tt>handlers() -&gt; [module()]</tt><br></p>
+</div><p>
+  Return a list of all registered bootstrap handlers.</p>
+
+<h3 class="function"><a name="info-0">info/0</a></h3>
+<div class="spec">
+<p><tt>info() -&gt; ok</tt><br></p>
+</div><p>
+  Print information about the bootstrap instances on all connected nodes.</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Sep 11 2013, 15:16:19.</i></p>
+</body>
+</html>

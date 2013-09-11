@@ -1,0 +1,5 @@
+%% encoding: UTF-8
+{application,bootstrap}.
+{packages,[]}.
+{modules,[bootstrap,bootstrap_broadcast,bootstrap_event,bootstrap_monitor,
+          bootstrap_multicast,bootstrap_protocol]}.
