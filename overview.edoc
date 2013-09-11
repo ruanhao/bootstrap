@@ -122,17 +122,23 @@ For more information, please refer to the <code>edoc</code> of the <code>bootstr
 
 === Mesh Topology ===
 
+<img src="http://schlagert.github.com/bootstrap/mesh.svg" alt="Mesh Topology with visible connections." width="350px" />
+
 <code>visible</code> connections
 
 TODO
 
 === Star Topology ===
 
+<img src="http://schlagert.github.com/bootstrap/star.svg" alt="Star Topology with visible and hidden connections." width="700px" />
+
 <code>visible</code> or <code>hidden</code> connections
 
 TODO
 
 === Tree Topology ===
+
+<img src="http://schlagert.github.com/bootstrap/star.svg" alt="Tree Topology with hidden connections." width="350px" />
 
 <code>hidden</code> connections
 
