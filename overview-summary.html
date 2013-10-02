@@ -33,7 +33,34 @@ nodes.</p>
 
 <h4><a name="How_it_works">How it works</a></h4>
 
-<p>TODO</p>
+<p>The node discovery process is based on a simple, distributed P2P protocol
+defining two PDUs, the <code>bootstrap</code> _PING_ and _PONG_ messages. As mentioned
+earlier, these messages are distributed via either UDP broadcast or multicast.
+All nodes in the cluster __must__ run the same protocol. See below for the
+representation of the messages.</p>
+
+<pre>%% PING:
+term_to_binary({bootstrap, {ping, PingNode &amp;#183; node(), PingAddr &amp;#183; inet:ip4_address()}}).
+
+%% PONG:
+term_to_binary({bootstrap, {pong, PongNode &amp;#183; node(), PingNode &amp;#183; node()}}).</pre>
+
+<p>It's well known that broadcast as well as multicast can load a network pretty
+heavy. Therefore, the <code>bootstrap</code> application takes measures to reduce the
+network traffic to a minimum using strategies known from P2P overlay protocols
+designed for the use in mobile Ad-hoc networks (which are very sensitive to
+extensive medium usage).</p>
+
+<p>Most of the ideas behind the <code>bootstrap</code> protocol are inspired by the _Local
+Broadcast Cluster_ concept described in [1]. _PING_ __and__ _PONG_ messages are
+distributed as broadcast/multicast. This makes it possible to have only one
+active instance of the protocol at a time. To ensure this, the <code>bootstrap</code>
+protocol will detect and solve _PING_ collisions. Furthermore, it will use
+information from _PONG_ messages to make distributed decisions whether to ping
+or not to ping. All traffic will be stopped as soon as all nodes in the cluster
+meet their connectivity needs.</p>
+
+<p>TODO make more detailed description (e.g. with figures)</p>
 
 <h4><a name="Configuration">Configuration</a></h4>
 
@@ -92,6 +119,13 @@ environment:</p>
   <p>Specifies the rough time in milliseconds between two consecutive, active node
   discovery messages. Default is <code>10000</code>.</p>
 
+<p><li> <code>{broadcast_ip, BroadcastAddr � inet:ip4_address()}</code></li></p>
+
+  <p>Specifies the address to use for broadcast discovery. This parameter is
+  __optional__. If not specified <code>bootstrap</code> scans all available network
+  interfaces and uses those capable of broadcast. This parameter is useful if
+  you want to limit <code>bootstrap</code> traffic to a specific subnet.</p>
+
 <p><li> <code>{multicast_ip, MulticastAddr � inet:ip4_address()}</code></li></p>
 
   <p>Specifies the multicast address to be used for node discovery when using
@@ -128,7 +162,9 @@ exits. No messages will be sent to the calling process.</p>
 <p><code>bootstrap</code> handlers will get initial notifications for all __matching__ nodes
 that are currently connected.</p>
 
-<p>For more information, please refer to the <code>edoc</code> of the <code>bootstrap</code> module.</p>
+<p>The <code>example</code> directory contains a simple example of a <code>gen_server</code> subscribing
+for <code>bootstrap</code> notifications. For more information, please refer to the <code>edoc</code>
+of the <code>bootstrap</code> module.</p>
 
 <h4><a name="Security">Security</a></h4>
 
@@ -140,40 +176,109 @@ never transmit cookies over the wire in any form.</p>
 
 <h4><a name="Examples">Examples</a></h4>
 
+<p>This section gives some configuration examples along with respective resulting
+topologies. A small note to the used figures:</p>
+
+<p><li> The grey <code>bootstrap</code> box outlines the view of node connections a <code>bootstrap</code></li>  
+handler would see (the handler would get notifications for these nodes).</p>
+
+<p><li> The grey <code>net_kernel</code> box outlines the actual connections of a node. This is</li>
+  equivalent to the list of nodes you get from <code>erlang:nodes(connected)</code>.</p>
+
 <h4><a name="Mesh_Topology">Mesh Topology</a></h4>
+
+<p>This is the basic setup you get when connecting to other nodes. Every node is
+connected with every other node in the cluster. The view for <code>bootstrap</code>
+handlers does not differ from the <code>net_kernel</code> view:</p>
 
 <p><img src="http://schlagert.github.com/bootstrap/mesh.svg" alt="Mesh Topology with visible connections."></p>
 
-<p><code>visible</code> connections</p>
+<p>The <code>sys.config</code> configuration to build a topology like this would look like the
+following:</p>
 
-<p>TODO</p>
+<pre>%% on all nodes:
+[{bootstrap, [{connect_regex, ".*"}, {min_connections, 1}]}].</pre>
 
 <h4><a name="Star_Topology">Star Topology</a></h4>
 
+<p>This example shows the difference between <code>visible</code> and <code>hidden</code> connections.
+While <code>visible</code> connections (default Erlang) always build a mesh connected
+cluster (from the <code>net_kernel</code> view), <code>hidden</code> connections allow building custom
+cluster topologies. However, global name registration cannot be used in this
+case!</p>
+
+<p>The left figure shows the <code>visible</code> connection example. In this case the
+<code>bootstrap</code> filters connection notifications according to the configured
+<code>connect_regex</code>. This means when connecting the cluster <code>bootstrap</code> handlers
+will only get notifications for the nodes part of the <code>bootstrap</code> view of the
+cluster (top of the figure), although other connections may be established
+automatically by the <code>kernel</code> application.</p>
+
+<p>The right figure shows the star topology _forced_ to the <code>net_kernel</code> using
+<code>hidden</code> node connections that may not be used by the <code>kernel</code> to connect to
+other nodes automatically.</p>
+
 <p><img src="http://schlagert.github.com/bootstrap/star.svg" alt="Star Topology with visible and hidden connections."></p>
 
-<p><code>visible</code> or <code>hidden</code> connections</p>
+<p>The <code>sys.config</code> configuration to build a topology as shown in the __left__
+example would look like the following:</p>
 
-<p>TODO</p>
+<pre>%% master node:
+[{bootstrap, [{connect_regex, "slave@.*"},  {min_connections, 1}]}].
+
+%% slave node:
+[{bootstrap, [{connect_regex, "master@.*"}, {min_connections, 1}]}].</pre>
+
+<p>The <code>sys.config</code> configuration to build a topology as shown in the __right__
+example would look like the following:</p>
+
+<pre>%% master node:
+[{bootstrap, [{connect_regex, "slave@.*"},  {connect_mode, hidden}, {min_connections, 1}]}].
+
+%% slave node:
+[{bootstrap, [{connect_regex, "master@.*"}, {connect_mode, hidden}, {min_connections, 1}]}].</pre>
 
 <h4><a name="Tree_Topology">Tree Topology</a></h4>
 
+<p>This is a more complex example using <code>hidden</code> connections. The configurations
+not only differ from level to level, beginning at level two, a node must
+additionally decide to which branch of the tree it wants to connect. As can be
+seen in the configurations below, level one nodes use a combined regular
+expression to match <code>root</code> and <code>level2</code> nodes. A regular expression matching
+only <code>root</code> nodes would be sufficient to connect the tree, however, in this case
+level one nodes would not get notifications about connected level two nodes.</p>
+
 <p><img src="http://schlagert.github.com/bootstrap/tree.svg" alt="Tree Topology with hidden connections."></p>
 
-<p><code>hidden</code> connections</p>
+<p>The <code>sys.config</code> configuration to build a topology like this would look like the
+following:</p>
 
-<p>TODO</p>
+<pre>%% root node:
+[{bootstrap, [{connect_regex, "level1.*"}, {connect_mode, hidden}, {min_connections, 1}]}].
+
+%% level1 nodes:
+[{bootstrap, [{connect_regex, "(root|level2)@.*"}, {connect_mode, hidden}, {min_connections, 2}]}].
+
+%% level2 nodes (depending on which part of the tree a node should connect to):
+[{bootstrap, [{connect_regex, "level1a@.*"}, {connect_mode, hidden}, {min_connections, 1}]}].
+%% or
+[{bootstrap, [{connect_regex, "level1b@.*"}, {connect_mode, hidden}, {min_connections, 1}]}].</pre>
 
 <h4><a name="History">History</a></h4>
 
 <h4><a name="Version_0.0.1">Version 0.0.1</a></h4>
 
-<li> Regular expression based node matching</li>
+<p><li> Regular expression based node matching</li>
 <li> UDP broadcast support</li>
 <li> UDP multicast support</li>
 <li> Multi-node-per-host support</li>
 <li> Avoid duplicate broadcasts to minimize network usage</li>
-<li> Behaviour-based notification system</li>
+<li> Behaviour-based notification system</li></p>
+
+<h4><a name="References">References</a></h4>
+
+[1] Basissoftware f체r drahtlose Ad-hoc- und Sensornetze,
+    P. Baumung and M. Zitterbart, 2009 Universit채tsverlag Karlsruhe
 <script>
 // Jump directly to a referenced url given in trailing '[]:...'-notation
 function goto(tag) { parent.document.location.href = url(tag); }
@@ -182,6 +287,6 @@ function url(tag) { var o=document.getElementById(tag); return o ? o.href : '#'+
 
 <hr>
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Sep 12 2013, 08:53:46.</i></p>
+<p><i>Generated by EDoc, Oct 2 2013, 13:35:00.</i></p>
 </body>
 </html>
